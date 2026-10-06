@@ -1,0 +1,13 @@
+{
+	"scopeName": "criticmarkup.injection",
+	"injectionSelector": "L:text.html.quarto, L:text.html.markdown",
+	"patterns": [{ "include": "#substitution" }],
+	"repository": {
+		"substitution": {
+			"comment": "Claims {~~old~>new~~} before Markdown's ~~strikethrough~~ rule can strike out the whole block.",
+			"begin": "\\{~~",
+			"end": "~~\\}",
+			"name": "meta.criticmarkup.substitution"
+		}
+	}
+}

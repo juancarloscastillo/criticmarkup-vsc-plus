@@ -1,0 +1,359 @@
+{
+	"name": "criticmarkup-vsc-plus",
+	"displayName": "CriticMarkup VSC-plus",
+	"description": "Track changes for plain-text Quarto and Markdown: CriticMarkup editing with author initials, accept/reject, hover actions, highlighting, and an HTML render filter.",
+	"version": "0.3.1",
+	"publisher": "juancastillov",
+	"license": "MIT",
+	"engines": {
+		"vscode": "^1.64.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"keywords": [
+		"criticmarkup",
+		"quarto",
+		"markdown",
+		"track changes",
+		"review"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/juancarloscastillo/criticmarkup-vsc-plus.git"
+	},
+	"activationEvents": [
+		"onLanguage:quarto",
+		"onLanguage:markdown",
+		"onLanguage:rmd",
+		"onView:criticmarkup.changes",
+		"onView:criticmarkup.actions"
+	],
+	"main": "./src/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "criticmarkup.add",
+				"title": "Add",
+				"category": "CriticMarkup"
+			},
+			{
+				"command": "criticmarkup.delete",
+				"title": "Delete",
+				"category": "CriticMarkup"
+			},
+			{
+				"command": "criticmarkup.substitute",
+				"title": "Substitute",
+				"category": "CriticMarkup"
+			},
+			{
+				"command": "criticmarkup.highlight",
+				"title": "Comment",
+				"category": "CriticMarkup"
+			},
+			{
+				"command": "criticmarkup.next",
+				"title": "Next change",
+				"category": "CriticMarkup"
+			},
+			{
+				"command": "criticmarkup.prev",
+				"title": "Previous change",
+				"category": "CriticMarkup"
+			},
+			{
+				"command": "criticmarkup.accept",
+				"title": "Accept change",
+				"category": "CriticMarkup"
+			},
+			{
+				"command": "criticmarkup.reject",
+				"title": "Reject change",
+				"category": "CriticMarkup"
+			},
+			{
+				"command": "criticmarkup.acceptAll",
+				"title": "Accept all changes",
+				"category": "CriticMarkup",
+				"icon": "$(check-all)"
+			},
+			{
+				"command": "criticmarkup.rejectAll",
+				"title": "Reject all changes",
+				"category": "CriticMarkup",
+				"icon": "$(close-all)"
+			},
+			{
+				"command": "criticmarkup.setInitials",
+				"title": "Set my initials",
+				"category": "CriticMarkup"
+			},
+			{
+				"command": "criticmarkup.installFilter",
+				"title": "Install Quarto HTML filter",
+				"category": "CriticMarkup"
+			},
+			{
+				"command": "criticmarkup.menu",
+				"title": "Show Actions Menu",
+				"category": "CriticMarkup",
+				"icon": "$(comment-discussion)"
+			},
+			{
+				"command": "criticmarkup.revealChange",
+				"title": "Go to Change",
+				"category": "CriticMarkup"
+			},
+			{
+				"command": "criticmarkup.acceptItem",
+				"title": "Accept",
+				"category": "CriticMarkup",
+				"icon": "$(check)"
+			},
+			{
+				"command": "criticmarkup.rejectItem",
+				"title": "Reject",
+				"category": "CriticMarkup",
+				"icon": "$(close)"
+			},
+			{
+				"command": "criticmarkup.refreshView",
+				"title": "Refresh Changes",
+				"category": "CriticMarkup",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "criticmarkup.runAction",
+				"title": "Run Action",
+				"category": "CriticMarkup"
+			}
+		],
+		"keybindings": [
+			{
+				"key": "ctrl+k r",
+				"command": "-workbench.action.files.revealActiveFileInWindows"
+			},
+			{
+				"key": "ctrl+k a",
+				"command": "criticmarkup.add",
+				"when": "editorTextFocus && (editorLangId == quarto || editorLangId == markdown || editorLangId == rmd)"
+			},
+			{
+				"key": "ctrl+k d",
+				"command": "criticmarkup.delete",
+				"when": "editorTextFocus && (editorLangId == quarto || editorLangId == markdown || editorLangId == rmd)"
+			},
+			{
+				"key": "ctrl+k x",
+				"command": "criticmarkup.substitute",
+				"when": "editorTextFocus && (editorLangId == quarto || editorLangId == markdown || editorLangId == rmd)"
+			},
+			{
+				"key": "ctrl+k c",
+				"command": "criticmarkup.highlight",
+				"when": "editorTextFocus && (editorLangId == quarto || editorLangId == markdown || editorLangId == rmd)"
+			},
+			{
+				"key": "ctrl+k n",
+				"command": "criticmarkup.next",
+				"when": "editorTextFocus && (editorLangId == quarto || editorLangId == markdown || editorLangId == rmd)"
+			},
+			{
+				"key": "ctrl+k b",
+				"command": "criticmarkup.prev",
+				"when": "editorTextFocus && (editorLangId == quarto || editorLangId == markdown || editorLangId == rmd)"
+			},
+			{
+				"key": "ctrl+k y",
+				"command": "criticmarkup.accept",
+				"when": "editorTextFocus && (editorLangId == quarto || editorLangId == markdown || editorLangId == rmd)"
+			},
+			{
+				"key": "ctrl+k r",
+				"command": "criticmarkup.reject",
+				"when": "editorTextFocus && (editorLangId == quarto || editorLangId == markdown || editorLangId == rmd)"
+			},
+			{
+				"key": "ctrl+k u",
+				"command": "criticmarkup.reject",
+				"when": "editorTextFocus && (editorLangId == quarto || editorLangId == markdown || editorLangId == rmd)"
+			}
+		],
+		"configuration": {
+			"title": "CriticMarkup",
+			"properties": {
+				"criticmarkup.background": {
+					"type": "string",
+					"default": "rgba(128,128,128,0.22)",
+					"description": "Background behind CriticMarkup changes (any CSS colour; empty for none). Translucent greys work on light and dark themes."
+				}
+			}
+		},
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "criticmarkup",
+					"title": "CriticMarkup",
+					"icon": "media/icon.svg"
+				}
+			]
+		},
+		"views": {
+			"criticmarkup": [
+				{
+					"id": "criticmarkup.actions",
+					"name": "Actions"
+				},
+				{
+					"id": "criticmarkup.changes",
+					"name": "Changes"
+				}
+			]
+		},
+		"viewsWelcome": [
+			{
+				"view": "criticmarkup.changes",
+				"contents": "No CriticMarkup changes in the active document.\n\nOpen a Quarto, Markdown or R Markdown file, or add a change with Ctrl+K A / D / X / C."
+			}
+		],
+		"menus": {
+			"editor/title": [
+				{
+					"submenu": "criticmarkup.submenu",
+					"when": "editorLangId == quarto || editorLangId == markdown || editorLangId == rmd",
+					"group": "navigation"
+				}
+			],
+			"view/title": [
+				{
+					"command": "criticmarkup.menu",
+					"when": "view == criticmarkup.changes",
+					"group": "navigation@1"
+				},
+				{
+					"command": "criticmarkup.acceptAll",
+					"when": "view == criticmarkup.changes",
+					"group": "navigation@2"
+				},
+				{
+					"command": "criticmarkup.rejectAll",
+					"when": "view == criticmarkup.changes",
+					"group": "navigation@3"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "criticmarkup.acceptItem",
+					"when": "view == criticmarkup.changes && viewItem == change",
+					"group": "inline@1"
+				},
+				{
+					"command": "criticmarkup.rejectItem",
+					"when": "view == criticmarkup.changes && viewItem == change",
+					"group": "inline@2"
+				}
+			],
+			"commandPalette": [
+				{
+					"command": "criticmarkup.revealChange",
+					"when": "false"
+				},
+				{
+					"command": "criticmarkup.acceptItem",
+					"when": "false"
+				},
+				{
+					"command": "criticmarkup.rejectItem",
+					"when": "false"
+				},
+				{
+					"command": "criticmarkup.refreshView",
+					"when": "false"
+				},
+				{
+					"command": "criticmarkup.runAction",
+					"when": "false"
+				}
+			],
+			"criticmarkup.submenu": [
+				{
+					"command": "criticmarkup.add",
+					"group": "1_edit@1"
+				},
+				{
+					"command": "criticmarkup.delete",
+					"group": "1_edit@2"
+				},
+				{
+					"command": "criticmarkup.substitute",
+					"group": "1_edit@3"
+				},
+				{
+					"command": "criticmarkup.highlight",
+					"group": "1_edit@4"
+				},
+				{
+					"command": "criticmarkup.next",
+					"group": "2_review@1"
+				},
+				{
+					"command": "criticmarkup.prev",
+					"group": "2_review@2"
+				},
+				{
+					"command": "criticmarkup.accept",
+					"group": "2_review@3"
+				},
+				{
+					"command": "criticmarkup.reject",
+					"group": "2_review@4"
+				},
+				{
+					"command": "criticmarkup.acceptAll",
+					"group": "2_review@5"
+				},
+				{
+					"command": "criticmarkup.rejectAll",
+					"group": "2_review@6"
+				},
+				{
+					"command": "criticmarkup.setInitials",
+					"group": "3_setup@1"
+				},
+				{
+					"command": "criticmarkup.installFilter",
+					"group": "3_setup@2"
+				}
+			]
+		},
+		"submenus": [
+			{
+				"id": "criticmarkup.submenu",
+				"label": "CriticMarkup",
+				"icon": "$(comment-discussion)"
+			}
+		],
+		"grammars": [
+			{
+				"scopeName": "criticmarkup.injection",
+				"path": "./syntaxes/criticmarkup-injection.json",
+				"injectTo": [
+					"text.html.quarto",
+					"text.html.markdown",
+					"text.html.markdown.rmarkdown"
+				]
+			}
+		]
+	},
+	"scripts": {
+		"test": "node test/core.test.js"
+	},
+	"bugs": {
+		"url": "https://github.com/juancarloscastillo/criticmarkup-vsc-plus/issues"
+	},
+	"homepage": "https://github.com/juancarloscastillo/criticmarkup-vsc-plus#readme",
+	"author": {
+		"name": "Juan Carlos Castillo"
+	}
+}
