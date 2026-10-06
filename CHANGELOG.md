@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.1
+- Hypothesis import: the annotated page URL is remembered per document (not in settings), so another file never reuses it. The confirmation dialog shows the source URL, warns when most annotations do not match the document, and has a **Use another URL** button.
+- The URL and token prompts explain where to get them and that they are asked only once.
+- Import works in windows with no folder open.
+
+## 0.4.0
+- **Import Hypothesis annotations** as `{==quote==}{>>user: comment<<}` into the document and its `{{< include >}}` files. Quotes that don't match exactly once are listed in the Output panel; already-imported comments are skipped; one undo per file. The API token is kept in VS Code's secret storage.
+
 ## 0.3.2
 - Add Marketplace icon; clarify Quarto HTML filter setup in the README.
 

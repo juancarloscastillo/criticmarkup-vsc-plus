@@ -3,8 +3,10 @@
 ![](media/icon.png)
 
 
-Track changes for plain-text `.qmd` and `.md` files, using [CriticMarkup](https://criticmarkup.com/).
-Works in files whose language mode is **Quarto** (`.qmd`), **Markdown** (`.md`) or **R Markdown** (`.Rmd`).
+- Track changes for plain-text `.qmd` and `.md` files, using [CriticMarkup](https://criticmarkup.com/).
+- Works in files whose language mode is **Quarto** (`.qmd`), **Markdown** (`.md`) or **R Markdown** (`.Rmd`).
+- and NEW GREAT FEATURE: import comments from [Hypothesis](https://hypothes.is) annotations on a published version of your document (details below).
+
 
 ## The Background
 
@@ -26,10 +28,10 @@ Keep track for changes in plain-text is hard. You can do something in Git, but i
 
 | Markup | Meaning |
 |---|---|
-| `{++text++}{>>JC<<}` | addition by JC |
-| `{--text--}{>>JC<<}` | deletion by JC |
-| `{~~old~>new~~}{>>JC<<}` | substitution by JC |
-| `{==text==}{>>JC: comment<<}` | comment on highlighted text |
+| `` | addition by JC |
+| `text` | deletion by JC |
+| `old` | substitution by JC |
+| `text` | comment on highlighted text |
 
 The first time you insert something in a workspace, you are asked for your initials (prefilled from `git config user.name`). They are stored per workspace on your machine, not in the repository. Change them with **CriticMarkup: Set My Initials**.
 
@@ -67,6 +69,17 @@ Hover over a change to see who made it and to accept or reject it with a click.
 
 - `criticmarkup.background`: background behind changes. Default `rgba(128,128,128,0.22)` (works on light and dark themes). Empty for none.
 
+## Importing Hypothesis annotations
+
+Comments left with [Hypothesis](https://hypothes.is) on a published version of your document can be pulled back into the source as CriticMarkup comments (`quoted text`).
+
+1. From the sidebar, open the CriticMarkup pane and click **Import Hypothesis annotations**.
+2.  The first time you are asked for an API token ([hypothes.is/account/developer](https://hypothes.is/account/developer)); it is kept in VS Code's secret storage (**Forget Hypothesis API token** removes it).
+3. Copy the URL of the published page (e.g. `https://mydomain.com/mydoc.html`) and paste it into the input box.
+4. The document and the files it pulls in with `{{< include >}}` are searched. You see a summary and confirm before anything is inserted; undo works per file.
+
+A quote is inserted only if it matches the source exactly once. Page-level notes and quotes that are not found (e.g. rendered citations) or are ambiguous are listed in the Output panel for manual placement. Re-running skips comments already imported, and replies are appended to their parent comment.
+
 ## Rendering in HTML
 
 Installing the extension does **not** change how Quarto renders your document. Editing in VS Code works on its own; to see the changes in the rendered HTML you need to add a small Quarto filter to your project (one-time setup per project):
@@ -82,7 +95,7 @@ Installing the extension does **not** change how Quarto renders your document. E
    ```
 3. Commit `criticmarkup.lua` to your repository. Co-authors who render the document need this file; co-authors who only edit in VS Code do not.
 
-Without the filter, the markup (`{++...++}`) appears as plain text in the rendered HTML.
+Without the filter, the markup (``) appears as plain text in the rendered HTML.
 
 Additions render green, deletions red with strikeout, substitutions as both, and comments as small tags. Set `criticmarkup: accept` or `criticmarkup: reject` in the YAML to render a clean version. The filter is HTML-only; other formats are left untouched, so accept or reject all changes before rendering a PDF.
 

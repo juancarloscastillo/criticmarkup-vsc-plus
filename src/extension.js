@@ -1,7 +1,9 @@
 "use strict";
 const vscode = require("vscode");
 const cp = require("child_process");
+const path = require("path");
 const core = require("./core");
+const hypothesis = require("./hypothesis");
 
 const LANGS = ["quarto", "markdown", "rmd"];
 const INITIALS_KEY = "criticmarkup.initials";
@@ -206,7 +208,9 @@ const MENU = [
 	{ label: "$(close-all) Reject all changes", command: "criticmarkup.rejectAll" },
 	{ kind: vscode.QuickPickItemKind.Separator, label: "Setup" },
 	{ label: "$(account) Set my initials", command: "criticmarkup.setInitials" },
-	{ label: "$(file-code) Install Quarto HTML filter", command: "criticmarkup.installFilter" }
+	{ label: "$(file-code) Install Quarto HTML filter", command: "criticmarkup.installFilter" },
+	{ kind: vscode.QuickPickItemKind.Separator, label: "Import" },
+	{ label: "$(cloud-download) Import Hypothesis annotations", command: "criticmarkup.importHypothesis" }
 ];
 
 async function showMenu() {
@@ -305,6 +309,88 @@ async function resolveItem(item, accept) {
 	await resolveAt(item.start, accept);
 }
 
+// ---------------------------------------------------------------- Hypothesis import
+
+const TOKEN_KEY = "criticmarkup.hypothesisToken";
+
+async function importHypothesis(context) {
+	const ed = currentEditor();
+	if (!ed) return vscode.window.showWarningMessage("Open a Quarto or Markdown document first.");
+	const cfg = vscode.workspace.getConfiguration("criticmarkup.hypothesis");
+
+	// the annotated page is remembered per document, so another file never reuses it by mistake
+	const uris = context.workspaceState.get("criticmarkup.hypothesisUris", {});
+	const docKey = ed.document.uri.fsPath;
+	let uri = cfg.get("uri") || uris[docKey];
+	if (!uri) {
+		uri = await vscode.window.showInputBox({ prompt: "URL of the page annotated in Hypothesis (as seen by Hypothesis). Asked once per document and remembered.", ignoreFocusOut: true });
+		if (!uri) return;
+		await context.workspaceState.update("criticmarkup.hypothesisUris", { ...uris, [docKey]: uri.trim() });
+	}
+	let token = await context.secrets.get(TOKEN_KEY);
+	if (!token) {
+		token = await vscode.window.showInputBox({
+			prompt: "Hypothesis API token. Get it at https://hypothes.is/account/developer (log in, click Generate your API token). Asked only once; it is kept in VS Code's secret storage",
+			password: true, ignoreFocusOut: true
+		});
+		if (!token) return;
+		await context.secrets.store(TOKEN_KEY, token.trim());
+	}
+
+	// the document plus the files it includes with {{< include >}}
+	const doc = ed.document;
+	const dir = path.dirname(doc.uri.fsPath);
+	const docs = new Map([[doc.uri.fsPath, doc]]);
+	for (const rel of hypothesis.includesOf(doc.getText())) {
+		const file = path.resolve(dir, rel);
+		try { docs.set(file, await vscode.workspace.openTextDocument(vscode.Uri.file(file))); } catch (e) { /* missing include */ }
+	}
+
+	let plan;
+	try {
+		const annotations = await vscode.window.withProgress(
+			{ location: vscode.ProgressLocation.Notification, title: "Fetching Hypothesis annotations" },
+			() => hypothesis.fetchAnnotations(token.trim(), uri.trim(), cfg.get("group")));
+		const texts = Object.fromEntries([...docs].map(([f, d]) => [f, d.getText()]));
+		plan = hypothesis.planImport(hypothesis.toComments(annotations), texts);
+	} catch (e) {
+		if (/API 401|API 403/.test(e.message)) await context.secrets.delete(TOKEN_KEY);
+		return vscode.window.showErrorMessage("Hypothesis import failed: " + e.message);
+	}
+
+	const { edits, unplaced, skipped, placed } = plan;
+	if (unplaced.length) {
+		const out = vscode.window.createOutputChannel("CriticMarkup: Hypothesis");
+		out.clear();
+		out.appendLine(unplaced.length + " annotation(s) need manual placement:\n");
+		for (const u of unplaced) out.appendLine("- [" + u.reason + "] " + (u.comment.quote ? '"' + u.comment.quote + '"\n    ' : "") + u.comment.user + ": " + u.comment.body);
+		out.show(true);
+	}
+	if (!edits.length) return vscode.window.showInformationMessage("Nothing to import" + (skipped ? " (" + skipped + " already in the files)" : "") + (unplaced.length ? "; " + unplaced.length + " not placed (see Output)" : "") + ".");
+	const mismatch = placed < unplaced.length
+		? "\n\nWARNING: only " + placed + " of " + (placed + unplaced.length) + " annotations match this document. The URL may belong to a different page."
+		: "";
+	const summary = "Annotations from " + uri.trim() + mismatch + "\n\nInsert " + edits.length + " comment(s) into " + new Set(edits.map(e => e.file)).size + " file(s)"
+		+ (skipped ? ", " + skipped + " already present" : "") + (unplaced.length ? ", " + unplaced.length + " not placed (see Output)" : "") + "?";
+	const choice = await vscode.window.showInformationMessage(summary, { modal: true }, "Insert", "Use another URL");
+	if (choice === "Use another URL") {
+		const rest = { ...context.workspaceState.get("criticmarkup.hypothesisUris", {}) };
+		delete rest[docKey];
+		await context.workspaceState.update("criticmarkup.hypothesisUris", rest);
+		if (cfg.get("uri")) vscode.window.showWarningMessage("The setting criticmarkup.hypothesis.uri is set and overrides the URL; clear it first.");
+		return importHypothesis(context);
+	}
+	if (choice !== "Insert") return;
+
+	const we = new vscode.WorkspaceEdit();
+	for (const e of edits) {
+		const d = docs.get(e.file);
+		we.replace(d.uri, new vscode.Range(d.positionAt(e.start), d.positionAt(e.end)), e.text);
+	}
+	await vscode.workspace.applyEdit(we);
+	vscode.window.showInformationMessage("Inserted " + edits.length + " Hypothesis comment(s). Files are modified but not saved; undo works per file.");
+}
+
 // ---------------------------------------------------------------- activation
 
 function activate(context) {
@@ -349,6 +435,8 @@ function activate(context) {
 	cmd("criticmarkup.prev", () => go(false));
 	cmd("criticmarkup.setInitials", () => getInitials(context, true));
 	cmd("criticmarkup.installFilter", () => installFilter(context));
+	cmd("criticmarkup.importHypothesis", () => importHypothesis(context));
+	cmd("criticmarkup.clearHypothesisToken", () => context.secrets.delete(TOKEN_KEY));
 	cmd("criticmarkup.menu", showMenu);
 	cmd("criticmarkup.runAction", runAction);
 	cmd("criticmarkup.revealChange", revealChange);

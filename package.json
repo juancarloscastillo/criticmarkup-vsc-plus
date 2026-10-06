@@ -2,7 +2,7 @@
 	"name": "criticmarkup-vsc-plus",
 	"displayName": "CriticMarkup VSC-plus",
 	"description": "Track changes for plain-text Quarto and Markdown: CriticMarkup editing with author initials, accept/reject, hover actions, highlighting, and an HTML render filter.",
-	"version": "0.3.2",
+	"version": "0.4.1",
 	"publisher": "juancastillov",
 	"icon": "media/icon.png",
 	"license": "MIT",
@@ -93,6 +93,16 @@
 			{
 				"command": "criticmarkup.installFilter",
 				"title": "Install Quarto HTML filter",
+				"category": "CriticMarkup"
+			},
+			{
+				"command": "criticmarkup.importHypothesis",
+				"title": "Import Hypothesis annotations",
+				"category": "CriticMarkup"
+			},
+			{
+				"command": "criticmarkup.clearHypothesisToken",
+				"title": "Forget Hypothesis API token",
 				"category": "CriticMarkup"
 			},
 			{
@@ -188,6 +198,16 @@
 					"type": "string",
 					"default": "rgba(128,128,128,0.22)",
 					"description": "Background behind CriticMarkup changes (any CSS colour; empty for none). Translucent greys work on light and dark themes."
+				},
+				"criticmarkup.hypothesis.uri": {
+					"type": "string",
+					"default": "",
+					"description": "URL of the published page whose Hypothesis annotations are imported as comments."
+				},
+				"criticmarkup.hypothesis.group": {
+					"type": "string",
+					"default": "",
+					"description": "Name of the Hypothesis group to import from (empty: annotations from all your groups)."
 				}
 			}
 		},
@@ -325,6 +345,10 @@
 				{
 					"command": "criticmarkup.installFilter",
 					"group": "3_setup@2"
+				},
+				{
+					"command": "criticmarkup.importHypothesis",
+					"group": "4_import@1"
 				}
 			]
 		},
@@ -348,7 +372,7 @@
 		]
 	},
 	"scripts": {
-		"test": "node test/core.test.js"
+		"test": "node test/core.test.js && node test/hypothesis.test.js"
 	},
 	"bugs": {
 		"url": "https://github.com/juancarloscastillo/criticmarkup-vsc-plus/issues"
