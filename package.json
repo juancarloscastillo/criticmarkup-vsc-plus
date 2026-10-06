@@ -2,7 +2,7 @@
 	"name": "criticmarkup-vsc-plus",
 	"displayName": "CriticMarkup VSC-plus",
 	"description": "Track changes for plain-text Quarto and Markdown: CriticMarkup editing with author initials, accept/reject, hover actions, highlighting, and an HTML render filter.",
-	"version": "0.3.1",
+	"version": "0.3.2",
 	"publisher": "juancastillov",
 	"icon": "media/icon.png",
 	"license": "MIT",

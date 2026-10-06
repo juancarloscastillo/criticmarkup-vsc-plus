@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.2
+- Add Marketplace icon; clarify Quarto HTML filter setup in the README.
+
 ## 0.3.1
 - Substitutions: only the replaced (old) text is struck out; the new text is shown in green. Fixes Markdown strikethrough covering the whole `{~~old~>new~~}` block.
 
