@@ -4,6 +4,7 @@
 	"description": "Track changes for plain-text Quarto and Markdown: CriticMarkup editing with author initials, accept/reject, hover actions, highlighting, and an HTML render filter.",
 	"version": "0.3.1",
 	"publisher": "juancastillov",
+	"icon": "media/icon.png",
 	"license": "MIT",
 	"engines": {
 		"vscode": "^1.64.0"
