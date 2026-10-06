@@ -69,14 +69,20 @@ Hover over a change to see who made it and to accept or reject it with a click.
 
 ## Rendering in HTML
 
-Run **CriticMarkup: Install Quarto HTML Filter** next to your document, then add to the YAML:
+Installing the extension does **not** change how Quarto renders your document. Editing in VS Code works on its own; to see the changes in the rendered HTML you need to add a small Quarto filter to your project (one-time setup per project):
 
-```yaml
-format:
-  html:
-    filters:
-      - criticmarkup.lua
-```
+1. Open your `.qmd` file and run **CriticMarkup: Install Quarto HTML Filter** from the command palette (or the sidebar). This copies `criticmarkup.lua` into the same folder as the document.
+2. Add the filter to the document's YAML:
+
+   ```yaml
+   format:
+     html:
+       filters:
+         - criticmarkup.lua
+   ```
+3. Commit `criticmarkup.lua` to your repository. Co-authors who render the document need this file; co-authors who only edit in VS Code do not.
+
+Without the filter, the markup (`{++...++}`) appears as plain text in the rendered HTML.
 
 Additions render green, deletions red with strikeout, substitutions as both, and comments as small tags. Set `criticmarkup: accept` or `criticmarkup: reject` in the YAML to render a clean version. The filter is HTML-only; other formats are left untouched, so accept or reject all changes before rendering a PDF.
 
