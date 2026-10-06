@@ -22,7 +22,6 @@ Keep track for changes in plain-text is hard. You can do something in Git, but i
 - a hover popup on each change, showing who made it and buttons to accept or reject it
 - different colors for the changes, configurable in the settings
 
-
 ## Markup tags
 
 | Markup | Meaning |

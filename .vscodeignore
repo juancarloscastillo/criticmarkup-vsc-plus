@@ -1,3 +1,5 @@
 test/**
 .vscode/**
 *.vsix
+README.html
+README_files/**
