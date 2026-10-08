@@ -143,6 +143,8 @@ Search for *CriticMarkup VSC-plus* in the VS Code extensions marketplace. In cas
 
 ## Changelog
 
+-   **0.5.0:** Reviewer Mode: your typing and deleting is recorded automatically as additions, deletions and substitutions (`Ctrl+K T`).
+-   **0.4.3:** README updates (Hypothesis groups, visual editor, changelog).
 -   **0.4.2:** Hypothesis import: choose the group (public, private or all), remembered per document.
 -   **0.4.1:** Hypothesis import: the page URL is remembered per document; the dialog shows the source and warns about mismatches; works without an open folder.
 -   **0.4.0:** Import of Hypothesis annotations as CriticMarkup comments.
