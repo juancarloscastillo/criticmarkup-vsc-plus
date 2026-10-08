@@ -20,15 +20,16 @@ function getJson(path, token, params) {
 	});
 }
 
-/** All visible annotations of `uri` in the group called `groupName` (any group of the user when empty). */
-async function fetchAnnotations(token, uri, groupName) {
+/** The groups of the user as [{ id, name }]; the public one is included (id "__world__"). */
+async function listGroups(token) {
+	const groups = await getJson("profile/groups", token);
+	return groups.map(g => ({ id: g.id, name: g.name }));
+}
+
+/** All visible annotations of `uri`, in the group `groupId` (all the user's groups when empty). */
+async function fetchAnnotations(token, uri, groupId) {
 	const params = { uri, limit: 200, sort: "created", order: "asc" };
-	if (groupName) {
-		const groups = await getJson("profile/groups", token);
-		const g = groups.find(x => x.name === groupName);
-		if (!g) throw new Error("Group '" + groupName + "' not found. Your groups: " + groups.map(x => x.name).join(", "));
-		params.group = g.id;
-	}
+	if (groupId) params.group = groupId;
 	const rows = [];
 	for (;;) {
 		const res = await getJson("search", token, { ...params, offset: rows.length });
@@ -109,4 +110,4 @@ function planImport(comments, texts) {
 /** Files pulled in with {{< include file.qmd >}} in `text`. */
 const includesOf = text => [...text.matchAll(/\{\{<\s*include\s+(\S+?)\s*>\}\}/g)].map(m => m[1]);
 
-module.exports = { fetchAnnotations, toComments, planImport, looseRegex, includesOf, commentMarkup };
+module.exports = { listGroups, fetchAnnotations, toComments, planImport, looseRegex, includesOf, commentMarkup };

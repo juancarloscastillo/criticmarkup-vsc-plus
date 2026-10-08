@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.2
+- Hypothesis import: choose the group to import from (public, a private group, or all). Asked once per document and remembered; the dialog shows the group and has a **Use another group** button. The `criticmarkup.hypothesis.group` setting still overrides it.
+
 ## 0.4.1
 - Hypothesis import: the annotated page URL is remembered per document (not in settings), so another file never reuses it. The confirmation dialog shows the source URL, warns when most annotations do not match the document, and has a **Use another URL** button.
 - The URL and token prompts explain where to get them and that they are asked only once.

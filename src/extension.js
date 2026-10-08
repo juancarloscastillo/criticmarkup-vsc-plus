@@ -337,6 +337,31 @@ async function importHypothesis(context) {
 		await context.secrets.store(TOKEN_KEY, token.trim());
 	}
 
+	// the group to import from: the setting wins; otherwise ask once per document (remembered)
+	const groupsKey = "criticmarkup.hypothesisGroups";
+	const savedGroups = context.workspaceState.get(groupsKey, {});
+	let group = savedGroups[docKey];
+	try {
+		const settingGroup = cfg.get("group");
+		if (settingGroup) {
+			const found = (await hypothesis.listGroups(token.trim())).find(g => g.name === settingGroup);
+			if (!found) return vscode.window.showErrorMessage("Hypothesis group '" + settingGroup + "' (setting criticmarkup.hypothesis.group) not found.");
+			group = { id: found.id, name: found.name };
+		} else if (!group) {
+			const groups = await hypothesis.listGroups(token.trim());
+			const pick = await vscode.window.showQuickPick(
+				[{ label: "All my groups", description: "public and private", group: { id: "", name: "All my groups" } },
+					...groups.map(g => ({ label: g.name, description: g.id === "__world__" ? "public" : "private group", group: g }))],
+				{ title: "Import annotations from which Hypothesis group? (asked once per document)", ignoreFocusOut: true });
+			if (!pick) return;
+			group = { id: pick.group.id, name: pick.group.name };
+			await context.workspaceState.update(groupsKey, { ...savedGroups, [docKey]: group });
+		}
+	} catch (e) {
+		if (/API 401|API 403/.test(e.message)) await context.secrets.delete(TOKEN_KEY);
+		return vscode.window.showErrorMessage("Hypothesis import failed: " + e.message);
+	}
+
 	// the document plus the files it includes with {{< include >}}
 	const doc = ed.document;
 	const dir = path.dirname(doc.uri.fsPath);
@@ -350,7 +375,7 @@ async function importHypothesis(context) {
 	try {
 		const annotations = await vscode.window.withProgress(
 			{ location: vscode.ProgressLocation.Notification, title: "Fetching Hypothesis annotations" },
-			() => hypothesis.fetchAnnotations(token.trim(), uri.trim(), cfg.get("group")));
+			() => hypothesis.fetchAnnotations(token.trim(), uri.trim(), group.id));
 		const texts = Object.fromEntries([...docs].map(([f, d]) => [f, d.getText()]));
 		plan = hypothesis.planImport(hypothesis.toComments(annotations), texts);
 	} catch (e) {
@@ -370,14 +395,21 @@ async function importHypothesis(context) {
 	const mismatch = placed < unplaced.length
 		? "\n\nWARNING: only " + placed + " of " + (placed + unplaced.length) + " annotations match this document. The URL may belong to a different page."
 		: "";
-	const summary = "Annotations from " + uri.trim() + mismatch + "\n\nInsert " + edits.length + " comment(s) into " + new Set(edits.map(e => e.file)).size + " file(s)"
+	const summary = "Annotations from " + uri.trim() + "\nGroup: " + group.name + mismatch + "\n\nInsert " + edits.length + " comment(s) into " + new Set(edits.map(e => e.file)).size + " file(s)"
 		+ (skipped ? ", " + skipped + " already present" : "") + (unplaced.length ? ", " + unplaced.length + " not placed (see Output)" : "") + "?";
-	const choice = await vscode.window.showInformationMessage(summary, { modal: true }, "Insert", "Use another URL");
+	const choice = await vscode.window.showInformationMessage(summary, { modal: true }, "Insert", "Use another URL", "Use another group");
 	if (choice === "Use another URL") {
 		const rest = { ...context.workspaceState.get("criticmarkup.hypothesisUris", {}) };
 		delete rest[docKey];
 		await context.workspaceState.update("criticmarkup.hypothesisUris", rest);
 		if (cfg.get("uri")) vscode.window.showWarningMessage("The setting criticmarkup.hypothesis.uri is set and overrides the URL; clear it first.");
+		return importHypothesis(context);
+	}
+	if (choice === "Use another group") {
+		const rest = { ...context.workspaceState.get(groupsKey, {}) };
+		delete rest[docKey];
+		await context.workspaceState.update(groupsKey, rest);
+		if (cfg.get("group")) vscode.window.showWarningMessage("The setting criticmarkup.hypothesis.group is set and overrides the choice; clear it first.");
 		return importHypothesis(context);
 	}
 	if (choice !== "Insert") return;
