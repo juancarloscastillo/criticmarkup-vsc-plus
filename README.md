@@ -154,4 +154,4 @@ Search for *CriticMarkup VSC-plus* in the VS Code extensions marketplace. In cas
 -   **0.1.1:** R Markdown (`.Rmd`) support.
 -   **0.1.0:** First release: insert, accept/reject and navigate changes, hover popups, colors, HTML filter.
 
-Full {++details++}{>>JC<<} in [CHANGELOG.md](CHANGELOG.md).
+Full details in [CHANGELOG.md](CHANGELOG.md).
