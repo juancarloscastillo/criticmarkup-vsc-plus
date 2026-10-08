@@ -2,7 +2,7 @@
 	"name": "criticmarkup-vsc-plus",
 	"displayName": "CriticMarkup VSC-plus",
 	"description": "Track changes for plain-text Quarto and Markdown: CriticMarkup editing with author initials, accept/reject, hover actions, highlighting, and an HTML render filter.",
-	"version": "0.4.3",
+	"version": "0.5.0",
 	"publisher": "juancastillov",
 	"icon": "media/icon.png",
 	"license": "MIT",
@@ -101,6 +101,11 @@
 				"category": "CriticMarkup"
 			},
 			{
+				"command": "criticmarkup.toggleTracking",
+				"title": "Toggle Reviewer Mode (track my edits)",
+				"category": "CriticMarkup"
+			},
+			{
 				"command": "criticmarkup.clearHypothesisToken",
 				"title": "Forget Hypothesis API token",
 				"category": "CriticMarkup"
@@ -183,6 +188,11 @@
 			{
 				"key": "ctrl+k r",
 				"command": "criticmarkup.reject",
+				"when": "editorTextFocus && (editorLangId == quarto || editorLangId == markdown || editorLangId == rmd)"
+			},
+			{
+				"key": "ctrl+k t",
+				"command": "criticmarkup.toggleTracking",
 				"when": "editorTextFocus && (editorLangId == quarto || editorLangId == markdown || editorLangId == rmd)"
 			},
 			{
@@ -337,6 +347,10 @@
 				{
 					"command": "criticmarkup.rejectAll",
 					"group": "2_review@6"
+				},
+				{
+					"command": "criticmarkup.toggleTracking",
+					"group": "3_setup@0"
 				},
 				{
 					"command": "criticmarkup.setInitials",

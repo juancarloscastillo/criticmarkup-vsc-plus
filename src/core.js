@@ -110,4 +110,60 @@ function snippetFor(kind, who) {
 
 const escapeSnippet = s => s.replace(/[\\$}]/g, "\\$&");
 
-module.exports = { findChanges, resolveText, resolveAll, describe, label, snippetFor, escapeSnippet };
+// Any CriticMarkup delimiter, opening or closing.
+const DELIM = /\{(?:\+\+|--|~~|==|>>)|(?:\+\+|--|~~|==|<<)\}/;
+// Characters whose deletion could break the markup itself.
+const SYNTAX_CHAR = /[{}+\-~=<>]/;
+
+/**
+ * Reviewer mode: turn one raw edit into CriticMarkup.
+ * `oldText` is the document before the edit; `ch` = { start, end, text } replaces oldText[start,end) with `text`.
+ * Returns null to leave the edit alone, else { start, end, text, cursor } to apply to the document *after* the edit
+ * (replace [start,end) with `text`, put the cursor at `cursor`).
+ * `backward` tells a Backspace-style deletion from a Delete-style one (for merging and cursor placement).
+ */
+function trackEdit(oldText, ch, initials, backward) {
+	const { start, end, text } = ch;
+	const tag = "{>>" + initials + "<<}";
+	if (DELIM.test(text)) return null;                       // our own commands, pasted markup
+	const changes = findChanges(oldText);
+
+	if (start === end) {                                      // insertion
+		if (!text) return null;
+		if (changes.some(c => c.start < start && start < c.end)) return null;   // typing inside markup
+		return { start, end: start + text.length, text: "{++" + text + "++}" + tag, cursor: start + 3 + text.length };
+	}
+
+	const removed = oldText.slice(start, end);
+	const touching = changes.filter(c => c.start < end && c.end > start);
+	if (touching.length) {
+		// editing the text inside a change is fine; anything that could damage the markup is undone
+		const safe = touching.length === 1 && touching[0].kind !== "delete" && touching[0].start < start && end < touching[0].end
+			&& !SYNTAX_CHAR.test(removed);
+		if (safe) return null;
+		return { start, end: start + text.length, text: removed, cursor: backward ? end : start };
+	}
+	if (DELIM.test(removed)) return null;
+
+	if (text) {                                               // replacement -> substitution
+		return { start, end: start + text.length, text: "{~~" + removed + "~>" + text + "~~}" + tag,
+			cursor: start + 3 + removed.length + 2 + text.length };
+	}
+
+	// deletion: merge with an adjacent deletion of the same author, else start a new one
+	const mine = changes.filter(c => c.kind === "delete" && c.m[0].endsWith(tag));
+	const before = mine.find(c => c.end === start);           // Delete key, right after a deletion
+	if (before) {
+		const merged = "{--" + before.m[2] + removed + "--}" + tag;
+		return { start: before.start, end: before.end, text: merged, cursor: backward ? before.start : before.start + merged.length };
+	}
+	const after = mine.find(c => c.start === end);            // Backspace, right before a deletion
+	if (after) {
+		const merged = "{--" + removed + after.m[2] + "--}" + tag;
+		return { start, end: start + (after.end - after.start), text: merged, cursor: backward ? start : start + merged.length };
+	}
+	const block = "{--" + removed + "--}" + tag;
+	return { start, end: start, text: block, cursor: backward ? start : start + block.length };
+}
+
+module.exports = { trackEdit, findChanges, resolveText, resolveAll, describe, label, snippetFor, escapeSnippet };

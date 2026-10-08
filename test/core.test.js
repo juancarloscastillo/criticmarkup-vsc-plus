@@ -44,3 +44,43 @@ assert.strictEqual(core.snippetFor("highlight", "JC"), "{==${TM_SELECTED_TEXT:$1
 assert.strictEqual(core.escapeSnippet("a$b}"), "a\\$b\\}");
 
 console.log("core tests passed");
+
+// reviewer mode: trackEdit
+{
+	const apply = (oldText, ch, who, back) => {
+		const after = oldText.slice(0, ch.start) + ch.text + oldText.slice(ch.end);
+		const r = core.trackEdit(oldText, ch, who, back);
+		if (!r) return { text: after, cursor: null };
+		return { text: after.slice(0, r.start) + r.text + after.slice(r.end), cursor: r.cursor };
+	};
+	const T = "{>>JC<<}";
+	// typing a character wraps it, cursor lands inside before ++}
+	let r = apply("ab cd", { start: 2, end: 2, text: "X" }, "JC");
+	assert.strictEqual(r.text, "ab{++X++}" + T + " cd");
+	assert.strictEqual(r.text.slice(r.cursor), "++}" + T + " cd");
+	// typing inside an addition is left alone
+	assert.strictEqual(core.trackEdit("ab{++X++}" + T, { start: 6, end: 6, text: "Y" }, "JC"), null);
+	// deleting text keeps it as a deletion (Delete key: cursor after the block)
+	r = apply("ab cd", { start: 2, end: 3, text: "" }, "JC", false);
+	assert.strictEqual(r.text, "ab{-- --}" + T + "cd");
+	assert.strictEqual(r.cursor, 2 + "{-- --}".length + T.length);
+	// Backspace chain merges deletions: delete "d" then "c" before it
+	let t = "ab cd";
+	r = apply(t, { start: 4, end: 5, text: "" }, "JC", true);   // backspace the d
+	assert.strictEqual(r.text, "ab c{--d--}" + T);
+	r = apply(r.text, { start: 3, end: 4, text: "" }, "JC", true); // backspace the c
+	assert.strictEqual(r.text, "ab {--cd--}" + T);
+	// Delete chain merges too
+	r = apply("ab cd", { start: 3, end: 4, text: "" }, "JC", false);
+	r = apply(r.text, { start: 3 + "{--c--}".length + T.length, end: 3 + "{--c--}".length + T.length + 1, text: "" }, "JC", false);
+	assert.strictEqual(r.text, "ab {--cd--}" + T);
+	// typing over a selection is a substitution
+	r = apply("ab cd", { start: 3, end: 5, text: "Z" }, "JC");
+	assert.strictEqual(r.text, "ab {~~cd~>Z~~}" + T);
+	assert.strictEqual(r.text.slice(r.cursor), "~~}" + T);
+	// deleting a delimiter is undone; our own markup is never re-wrapped
+	const doc = "a{++b++}" + T;
+	r = apply(doc, { start: 1, end: 2, text: "" }, "JC", true);
+	assert.strictEqual(r.text, doc);
+	assert.strictEqual(core.trackEdit("ab", { start: 1, end: 1, text: "{++x++}" }, "JC"), null);
+}

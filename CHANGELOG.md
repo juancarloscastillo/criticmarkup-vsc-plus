@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.0
+- **Reviewer mode** (`Ctrl+K T`, status bar button, menus): typing becomes additions, deleting becomes deletions (consecutive deletions merge), typing over a selection becomes a substitution, all tagged with your initials. Off at every start. Edits inside your own additions and comments work normally; deleting markup characters is blocked; multi-cursor edits are not tracked.
+
 ## 0.4.3
 - README: restored the markup examples, documented the Hypothesis group picker, the Quarto visual editor behavior and a changelog section.
 

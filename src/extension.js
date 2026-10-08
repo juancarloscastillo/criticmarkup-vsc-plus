@@ -207,6 +207,7 @@ const MENU = [
 	{ label: "$(check-all) Accept all changes", command: "criticmarkup.acceptAll" },
 	{ label: "$(close-all) Reject all changes", command: "criticmarkup.rejectAll" },
 	{ kind: vscode.QuickPickItemKind.Separator, label: "Setup" },
+	{ label: "$(edit) Toggle Reviewer Mode (track my edits)", description: "Ctrl+K T", command: "criticmarkup.toggleTracking" },
 	{ label: "$(account) Set my initials", command: "criticmarkup.setInitials" },
 	{ label: "$(file-code) Install Quarto HTML filter", command: "criticmarkup.installFilter" },
 	{ kind: vscode.QuickPickItemKind.Separator, label: "Import" },
@@ -307,6 +308,59 @@ async function resolveItem(item, accept) {
 	if (!ed || !item) return;
 	await vscode.window.showTextDocument(ed.document, { viewColumn: ed.viewColumn, preserveFocus: true });
 	await resolveAt(item.start, accept);
+}
+
+// ---------------------------------------------------------------- Reviewer mode
+// While on, ordinary typing and deleting is rewritten into additions, deletions and substitutions.
+
+let tracking = false, trackBusy = false;
+const snapshots = new Map();      // document uri -> text before the next edit
+const selBefore = new Map();      // document uri -> { offset, empty } of the selection before the next edit
+
+function snap(ed) {
+	if (!ed || !isSupported(ed.document)) return;
+	const key = ed.document.uri.toString();
+	snapshots.set(key, ed.document.getText());
+	selBefore.set(key, { offset: ed.document.offsetAt(ed.selection.active), empty: ed.selection.isEmpty });
+}
+
+async function toggleTracking(context, status) {
+	if (!tracking && !(await getInitials(context))) return;
+	tracking = !tracking;
+	snapshots.clear();
+	snap(vscode.window.activeTextEditor);
+	status.text = tracking ? "$(edit) Reviewing" : "$(edit) Review off";
+	status.backgroundColor = tracking ? new vscode.ThemeColor("statusBarItem.warningBackground") : undefined;
+	vscode.window.showInformationMessage(tracking
+		? "Reviewer mode ON: your typing is recorded as CriticMarkup changes."
+		: "Reviewer mode off.");
+}
+
+async function trackChange(context, e) {
+	if (!tracking || trackBusy || e.reason !== undefined || e.contentChanges.length !== 1) return;
+	const ed = vscode.window.activeTextEditor;
+	const doc = e.document;
+	if (!ed || ed.document !== doc || !isSupported(doc)) return;
+	const key = doc.uri.toString();
+	const initials = context.workspaceState.get(INITIALS_KEY);
+	const oldText = snapshots.get(key), before = selBefore.get(key);
+	const c = e.contentChanges[0];
+	const ch = { start: c.rangeOffset, end: c.rangeOffset + c.rangeLength, text: c.text };
+	if (!initials || oldText === undefined || doc.getText() !== oldText.slice(0, ch.start) + ch.text + oldText.slice(ch.end)) return snap(ed);
+
+	const backward = !!before && before.empty && before.offset === ch.end;
+	const r = core.trackEdit(oldText, ch, initials, backward);
+	if (!r) return snap(ed);
+	trackBusy = true;
+	try {
+		await ed.edit(b => b.replace(new vscode.Range(doc.positionAt(r.start), doc.positionAt(r.end)), r.text),
+			{ undoStopBefore: false, undoStopAfter: false });
+		const pos = doc.positionAt(r.cursor);
+		ed.selection = new vscode.Selection(pos, pos);
+	} finally {
+		trackBusy = false;
+		snap(ed);
+	}
 }
 
 // ---------------------------------------------------------------- Hypothesis import
@@ -447,11 +501,18 @@ function activate(context) {
 		if (ed && isSupported(ed.document)) {
 			status.text = "$(comment-discussion) CriticMarkup " + core.findChanges(ed.document.getText()).length;
 			status.show();
+			trackStatus.show();
 		} else {
 			status.hide();
+			trackStatus.hide();
 		}
 		provider.refresh();
 	};
+
+	const trackStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 99);
+	trackStatus.command = "criticmarkup.toggleTracking";
+	trackStatus.text = "$(edit) Review off";
+	trackStatus.tooltip = "Reviewer mode: record your typing as CriticMarkup changes (Ctrl+K T)";
 
 	const cmd = (id, fn) => context.subscriptions.push(vscode.commands.registerCommand(id, fn));
 	for (const kind of ["add", "delete", "substitute", "highlight"]) {
@@ -469,6 +530,7 @@ function activate(context) {
 	cmd("criticmarkup.installFilter", () => installFilter(context));
 	cmd("criticmarkup.importHypothesis", () => importHypothesis(context));
 	cmd("criticmarkup.clearHypothesisToken", () => context.secrets.delete(TOKEN_KEY));
+	cmd("criticmarkup.toggleTracking", () => toggleTracking(context, trackStatus));
 	cmd("criticmarkup.menu", showMenu);
 	cmd("criticmarkup.runAction", runAction);
 	cmd("criticmarkup.revealChange", revealChange);
@@ -481,11 +543,17 @@ function activate(context) {
 		vscode.languages.registerHoverProvider(LANGS.map(language => ({ language })),
 			{ provideHover: hoverFor }),
 		status,
+		trackStatus,
+		vscode.window.onDidChangeTextEditorSelection(e => {
+			// fires after the edit it belongs to, so this is the selection "before" the next edit
+			if (tracking && !trackBusy && e.textEditor === vscode.window.activeTextEditor) snap(e.textEditor);
+		}),
 		vscode.window.registerTreeDataProvider("criticmarkup.changes", provider),
 		vscode.window.registerTreeDataProvider("criticmarkup.actions", new ActionsProvider()),
-		vscode.window.onDidChangeActiveTextEditor(ed => { paint(ed); updateUi(); }),
+		vscode.window.onDidChangeActiveTextEditor(ed => { paint(ed); updateUi(); if (tracking) snap(ed); }),
 		vscode.window.onDidChangeVisibleTextEditors(paintAll),
 		vscode.workspace.onDidChangeTextDocument(e => {
+			trackChange(context, e);
 			vscode.window.visibleTextEditors.filter(ed => ed.document === e.document).forEach(paint);
 			updateUi();
 		}),

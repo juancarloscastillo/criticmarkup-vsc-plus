@@ -21,6 +21,7 @@ Keep track for changes in plain-text is hard. You can do something in Git, but i
 -   a command to set your initials for the changes you make
 -   a hover popup on each change, showing who made it and buttons to accept or reject it
 -   different colors for the changes, configurable in the settings
+-   Reviewer Mode: your typing and deleting is recorded automatically as changes
 -   import of [Hypothesis](https://hypothes.is) annotations (public or private groups) as CriticMarkup comments
 
 ## Markup tags
@@ -53,6 +54,7 @@ Press `Ctrl+K`, release, then the letter (chords avoid clashes with AltGr keyboa
 | `Ctrl+K` `N` / `B`    | next / previous change                  |
 | `Ctrl+K` `Y`          | accept change at cursor or in selection |
 | `Ctrl+K` `R` (or `U`) | reject change at cursor or in selection |
+| `Ctrl+K` `T` | turn Reviewer Mode on / off |
 
 Hover over a change to see who made it and to accept or reject it with a click. **Accept All / Reject All Changes in Document** are in the command palette.
 
@@ -61,6 +63,32 @@ Hover over a change to see who made it and to accept or reject it with a click. 
 ``` json
 { "key": "ctrl+k r", "command": "-workbench.action.files.revealActiveFileInWindows" }
 ```
+
+## Reviewer mode
+
+Reviewer Mode records your edits as CriticMarkup while you write normally, so you do not have to insert each tag by hand.
+
+**How to use it**
+
+1. Open a `.qmd`, `.md` or `.Rmd` file.
+2. Turn it on with `Ctrl+K` `T`, the **Review off** button in the status bar (bottom right), or **Toggle Reviewer Mode** in the CriticMarkup menu. The first time it asks for your initials.
+3. The status bar changes to a highlighted **Reviewing**. Write and delete as usual.
+4. Turn it off the same way. It is always off when VS Code starts.
+
+**What gets recorded** (all tagged with your initials)
+
+| You do | Result |
+|---|---|
+| type new text | `{++text++}{>>JC<<}` (continued typing extends the same addition) |
+| delete text | `{--text--}{>>JC<<}` (consecutive Backspace / Delete presses merge into one deletion) |
+| type over a selected text | `{~~old~>new~~}{>>JC<<}` |
+
+**Good to know**
+
+- Editing the text inside your own additions or comments works normally.
+- Deleting a character of the markup itself (`{ } + - ~ = < >`) is blocked, so the structure cannot break.
+- `Ctrl+Z` works as usual. Pasted CriticMarkup and the extension's own commands are not re-wrapped.
+- Multi-cursor edits and edits in Quarto's visual mode are not tracked.
 
 ## Quarto visual editor
 
