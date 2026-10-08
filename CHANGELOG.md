@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.3
+- README: restored the markup examples, documented the Hypothesis group picker, the Quarto visual editor behavior and a changelog section.
+
 ## 0.4.2
 - Hypothesis import: choose the group to import from (public, a private group, or all). Asked once per document and remembered; the dialog shows the group and has a **Use another group** button. The `criticmarkup.hypothesis.group` setting still overrides it.
 
